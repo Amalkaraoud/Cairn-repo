@@ -1,0 +1,91 @@
+{
+  "seed": 20261116,
+  "trials_per_attack": 300,
+  "data_status": "synthetic, host-run (CPython); not measured on ESP32/Wokwi",
+  "tamper": {
+    "EDIT": {
+      "chain_only": 100.0,
+      "chain_mac": 100.0,
+      "chain_mac_anchor": 100.0,
+      "localised": 100.0
+    },
+    "DELETE": {
+      "chain_only": 100.0,
+      "chain_mac": 100.0,
+      "chain_mac_anchor": 100.0,
+      "localised": 100.0
+    },
+    "REORDER": {
+      "chain_only": 100.0,
+      "chain_mac": 100.0,
+      "chain_mac_anchor": 100.0,
+      "localised": 100.0
+    },
+    "INSERT_FAKE": {
+      "chain_only": 100.0,
+      "chain_mac": 100.0,
+      "chain_mac_anchor": 100.0,
+      "localised": 100.0
+    },
+    "TRUNCATE_TAIL": {
+      "chain_only": 0.0,
+      "chain_mac": 0.0,
+      "chain_mac_anchor": 100.0,
+      "localised": 100.0
+    },
+    "EDIT_REHASH": {
+      "chain_only": 0.0,
+      "chain_mac": 100.0,
+      "chain_mac_anchor": 100.0,
+      "localised": 100.0
+    },
+    "KEY_COMPROMISE_APPEND": {
+      "chain_only": 0.0,
+      "chain_mac": 0.0,
+      "chain_mac_anchor": 0.0,
+      "localised": 0.0
+    }
+  },
+  "plausibility": {
+    "clean_ticks": 150000,
+    "false_alarms": {
+      "temp": 0,
+      "gas": 13,
+      "pir": 0
+    },
+    "faults": {
+      "TEMP_SPOOF": {
+        "recall_full_pct": 100.0,
+        "recall_fixed_threshold_pct": 0.0,
+        "recall_adaptive_only_pct": 0.0
+      },
+      "GAS_SPIKE_1200": {
+        "recall_full_pct": 100.0,
+        "recall_fixed_threshold_pct": 0.0,
+        "recall_adaptive_only_pct": 100.0
+      },
+      "GAS_ALARM_2400": {
+        "recall_full_pct": 100.0,
+        "recall_fixed_threshold_pct": 100.0,
+        "recall_adaptive_only_pct": 0.0
+      },
+      "GAS_SLOW_RAMP": {
+        "recall_full_pct": 100.0,
+        "recall_fixed_threshold_pct": 100.0,
+        "recall_adaptive_only_pct": 0.0
+      },
+      "PIR_FLOOD": {
+        "recall_full_pct": 100.0,
+        "recall_fixed_threshold_pct": 0.0,
+        "recall_adaptive_only_pct": 1.0
+      }
+    }
+  },
+  "overhead": {
+    "records": 150,
+    "bytes_per_record": 274.0,
+    "host_append_ms": 0.219,
+    "host_verify_full_ms": 2.33,
+    "note": "CPython on the build host: indicative only, NOT ESP32 timing"
+  }
+}

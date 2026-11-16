@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+firmware/keys.py
+dist/
+*.log
+cairn.state
+.DS_Store
