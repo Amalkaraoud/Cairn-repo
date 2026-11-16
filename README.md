@@ -12,6 +12,11 @@
 
 Everything runs in the [Wokwi](https://wokwi.com) ESP32 simulator — no hardware needed.
 
+[![Interactive demo](https://img.shields.io/badge/🌐_Interactive_demo-GitHub_Pages-f0a73a?style=for-the-badge)](https://amalkaraoud.github.io/Cairn-repo/) [![Open the live simulation on Wokwi](https://img.shields.io/badge/▶_Run_it_on-Wokwi-1f6feb?style=for-the-badge)](https://wokwi.com/projects/480885243109700609)
+
+**Interactive web demo (real SHA-256/HMAC chain, attacks, audit):** [https://amalkaraoud.github.io/Cairn-repo/](https://amalkaraoud.github.io/Cairn-repo/)  
+**Live simulation (working project, circuit + firmware preloaded):** [https://wokwi.com/projects/480885243109700609](https://wokwi.com/projects/480885243109700609)
+
 ![wiring](assets/wiring.png)
 
 ## What it detects — and what it does not
@@ -29,6 +34,7 @@ Measured on synthetic logs, 300 trials per attack, on a host computer (`experime
 ## Repository layout
 
 ```
+index.html    interactive web demo (served by GitHub Pages)
 firmware/     MicroPython code (flat layout: copy all files to the board / Wokwi)
 wokwi/        diagram.json (circuit)
 tools/        verify.py — offline verifier
@@ -45,7 +51,7 @@ python3 -m unittest discover -s tests -v
 python3 experiments/run_experiments.py      # writes experiments/results/results.json
 ```
 
-**Simulator:** see [docs/WOKWI_GUIDE.md](docs/WOKWI_GUIDE.md) (create an ESP32 MicroPython project, paste `diagram.json`, add the files from `firmware/`, press ▶).
+**Simulator:** open the [live Wokwi project](https://wokwi.com/projects/480885243109700609) and press ▶, or see [docs/WOKWI_GUIDE.md](docs/WOKWI_GUIDE.md) to rebuild it (create an ESP32 MicroPython project, paste `diagram.json`, add the files from `firmware/`, press ▶).
 
 **Verify a log exported from the simulator** (press AUDIT; copy the serial terminal to `dump.txt`):
 ```bash
@@ -58,7 +64,7 @@ python3 tools/verify.py --log dump.txt --key-hex $(python3 -c "import sys; sys.p
 |---|---|
 | Hash chain, HMAC, ratchet, verifier | ✅ unit-tested on host (16 tests) |
 | Plausibility rules | ✅ unit-tested + synthetic experiments (host) |
-| Full firmware run in Wokwi | ⚠️ **to be confirmed by the author** — `diagram.json` part/pin names were written from public examples and not yet imported into Wokwi |
+| Full firmware run in Wokwi | ✅ imported and run in Wokwi ([project](https://wokwi.com/projects/480885243109700609)): circuit renders, Wi-Fi/NTP sync, events sealed and logged (e.g. `GAS_ALARM`). The ATTACK/AUDIT button flow is still to be re-checked by the author |
 | ESP32 hardware | ❌ never run on real hardware |
 | Log rotation, flash-wear management, secure key storage | ❌ not implemented (see limits) |
 

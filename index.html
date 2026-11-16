@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CAIRN — tamper-evident black box for home-security events</title>
+<meta name="description" content="Interactive demo of CAIRN: a hash chain + HMAC with a forward-secure key ratchet. Add events, attack the log, run the audit — in your browser, with real SHA-256 / HMAC.">
+<style>
+:root{--bg:#14110f;--panel:#1e1a17;--panel2:#26211d;--line:#3a322b;--tx:#efe7dc;--mut:#a89c8d;--amber:#f0a73a;--ok:#5fcf8b;--bad:#ff6b5e;--blue:#6db6ff}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.55 system-ui,Segoe UI,Roboto,sans-serif}
+a{color:var(--amber)}code,.mono{font-family:ui-monospace,Consolas,monospace}
+.wrap{max-width:1180px;margin:auto;padding:0 20px}
+nav{position:sticky;top:0;z-index:20;background:#14110fe6;backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+nav .wrap{display:flex;gap:18px;align-items:center;height:54px}
+nav b{letter-spacing:.14em;color:var(--amber)}nav a{color:var(--mut);text-decoration:none;font-size:14px}nav a:hover{color:var(--tx)}nav .sp{flex:1}
+.hero{padding:56px 0 30px;display:grid;grid-template-columns:1.15fr .85fr;gap:30px;align-items:center}
+h1{font-size:clamp(34px,5vw,58px);line-height:1.05;margin:0 0 14px}h1 span{color:var(--amber)}
+.lead{color:var(--mut);font-size:18px;max-width:620px}
+.cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:22px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:11px 18px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--tx);font:600 14px system-ui;cursor:pointer;text-decoration:none;transition:.15s}
+.btn:hover{transform:translateY(-1px);border-color:var(--amber)}.btn.pri{background:var(--amber);color:#1a1209;border-color:var(--amber)}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.btn.bad{border-color:#7a3a33;color:#ffb4ab}.btn.bad:hover{border-color:var(--bad)}
+section{padding:36px 0}h2{font-size:28px;margin:0 0 6px}.sub{color:var(--mut);margin:0 0 20px;max-width:760px}
+.grid{display:grid;gap:16px}.g3{grid-template-columns:repeat(3,1fr)}.g2{grid-template-columns:1fr 1fr}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
+.card h3{margin:0 0 6px;font-size:16px}.card p{margin:0;color:var(--mut);font-size:14px}
+.n{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--amber);color:#1a1209;font-weight:800;font-size:13px;margin-right:8px}
+/* lab */
+.lab{display:grid;grid-template-columns:300px minmax(0,1fr);gap:16px}.lab>div{min-width:0}
+.ctl label{display:flex;justify-content:space-between;font-size:13px;color:var(--mut);margin-top:12px}
+.ctl input[type=range]{width:100%;accent-color:var(--amber)}
+.val{color:var(--tx);font-family:ui-monospace,monospace}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.gate{margin-top:14px;font-size:13px;min-height:44px;padding:10px;border-radius:10px;background:var(--panel2);border:1px dashed var(--line);color:var(--mut)}
+.chainbox{overflow-x:auto;padding:14px 4px 18px;min-height:210px;border-radius:12px;background:var(--panel2);border:1px solid var(--line)}
+.chain{display:flex;align-items:flex-end;gap:0;width:max-content;padding:0 12px}
+.stone{position:relative;width:150px;margin-right:22px;padding:10px 10px 9px;border-radius:14px 14px 10px 10px;background:linear-gradient(#3b332c,#2b2520);border:1px solid #54483c;cursor:pointer;transition:.25s;font-size:11.5px;animation:drop .55s cubic-bezier(.2,1.4,.4,1)}
+.stone:after{content:"";position:absolute;right:-22px;top:50%;width:22px;height:2px;background:var(--amber);opacity:.7}
+.stone:last-child:after{display:none}
+.stone.sel{outline:2px solid var(--blue)}.stone.bad{background:linear-gradient(#5a2722,#3b1b18);border-color:var(--bad);animation:shake .4s}
+.stone.scan{box-shadow:0 0 0 2px var(--amber),0 0 22px #f0a73a77}.stone.good{border-color:var(--ok)}
+.stone .t{display:flex;justify-content:space-between;font-weight:700;color:var(--amber);font-size:12px}
+.stone .ev{font-weight:700;font-size:13px;margin:3px 0}.stone .mut{color:var(--mut)}
+.stone .hx{word-break:break-all;font-family:ui-monospace,monospace;color:#cbbfae}
+.stone.hb .ev{color:var(--mut)}.stone.al .ev{color:var(--bad)}
+@keyframes drop{from{transform:translateY(-60px);opacity:0}to{transform:none;opacity:1}}
+@keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.anchor{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:12px 0;font-size:13px;color:var(--mut)}
+.chip{padding:4px 10px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);font-family:ui-monospace,monospace;font-size:12px;color:var(--tx)}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:left}th{color:var(--mut);font-weight:600}
+td.c{text-align:center}.okc{color:var(--ok);font-weight:700}.badc{color:var(--bad);font-weight:700}
+.res td:nth-child(2){font-weight:700}
+.log{font:12px/1.5 ui-monospace,monospace;background:#0d0b09;border:1px solid var(--line);border-radius:10px;padding:10px;max-height:150px;overflow:auto;color:#cbbfae;margin-top:12px}
+.note{font-size:13px;color:var(--mut);margin-top:10px}
+.sim{display:grid;grid-template-columns:1.1fr .9fr;gap:18px;align-items:center}
+.wokwi iframe{width:100%;height:520px;border:1px solid var(--line);border-radius:12px;background:#000}
+footer{border-top:1px solid var(--line);padding:28px 0;color:var(--mut);font-size:14px;margin-top:30px}
+@media(max-width:900px){nav .wrap{gap:12px;overflow:hidden}nav a:nth-child(n+4){display:none}nav a:last-child{display:inline}.btn{white-space:normal}.hero,.lab,.g3,.g2,.sim{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+/* hero cairn */
+.cairn svg{width:100%;max-width:360px;display:block;margin:auto}
+.st{animation:bob 4s ease-in-out infinite;transform-origin:center}.st:nth-child(2){animation-delay:.4s}.st:nth-child(3){animation-delay:.8s}.st:nth-child(4){animation-delay:1.2s}
+@keyframes bob{50%{transform:translateY(-4px)}}
+</style>
+</head>
+<body>
+<nav><div class="wrap"><b>CAIRN</b><a href="#lab">Live lab</a><a href="#how">How it works</a><a href="#sim">Wokwi simulation</a><a href="#results">Results</a><span class="sp"></span>
+<a href="https://github.com/Amalkaraoud/Cairn-repo" target="_blank" rel="noopener">GitHub ↗</a></div></nav>
+
+<div class="wrap">
+<header class="hero">
+ <div>
+  <p class="mono" style="color:var(--amber);margin:0 0 10px">MicroPython · ESP32 · Wokwi</p>
+  <h1>A <span>tamper-evident</span> black box for home-security events</h1>
+  <p class="lead">After a break-in or a gas leak, the alarm log is the evidence — and on a cheap device anyone can edit it. CAIRN seals every event in a hash chain authenticated by HMAC-SHA256 under a forward-secure key ratchet, and tells you <b>exactly which record was altered</b>.</p>
+  <div class="cta">
+   <a class="btn pri" href="#lab">▶ Try the live lab</a>
+   <a class="btn" href="https://wokwi.com/projects/480885243109700609" target="_blank" rel="noopener">Open the Wokwi simulation ↗</a>
+   <a class="btn" href="https://github.com/Amalkaraoud/Cairn-repo" target="_blank" rel="noopener">Source code ↗</a>
+  </div>
+ </div>
+ <div class="cairn" aria-hidden="true">
+  <svg viewBox="0 0 320 300"><g>
+   <ellipse class="st" cx="160" cy="262" rx="120" ry="30" fill="#3b332c" stroke="#54483c"/>
+   <ellipse class="st" cx="160" cy="200" rx="92" ry="26" fill="#4a4036" stroke="#6a5a49"/>
+   <ellipse class="st" cx="160" cy="146" rx="66" ry="22" fill="#5a4d40" stroke="#7d6a55"/>
+   <ellipse class="st" cx="160" cy="98" rx="42" ry="17" fill="#6b5b4a" stroke="#9a836a"/>
+   <ellipse class="st" cx="160" cy="62" rx="22" ry="12" fill="#f0a73a" stroke="#ffd08a"/>
+  </g><text x="160" y="266" text-anchor="middle" fill="#cbbfae" font-size="12" font-family="monospace">h₁ ← h₀</text>
+  <text x="160" y="204" text-anchor="middle" fill="#cbbfae" font-size="12" font-family="monospace">h₂ ← h₁</text>
+  <text x="160" y="150" text-anchor="middle" fill="#cbbfae" font-size="12" font-family="monospace">h₃ ← h₂</text></svg>
+ </div>
+</header>
+
+<section id="lab">
+ <h2>Live lab — runs entirely in your browser</h2>
+ <p class="sub">Real SHA-256 and HMAC-SHA256 (WebCrypto), same record format and ratchet as <code>firmware/chainlog.py</code>. <b>1.</b> Generate events. <b>2.</b> Click a stone to pick a target and play the attacker. <b>3.</b> See which verification level catches it.</p>
+ <div class="lab">
+  <div class="card ctl">
+   <h3><span class="n">1</span>Sensors → plausibility gate</h3>
+   <label>Gas (MQ-2) <span class="val" id="gasv">400</span></label><input id="gas" type="range" min="0" max="4095" value="400">
+   <label>Temperature (DHT22) <span class="val" id="tmpv">22.0 °C</span></label><input id="tmp" type="range" min="-10" max="60" step="0.5" value="22">
+   <div class="row"><button class="btn" id="pir">PIR motion</button><button class="btn" id="hb">Heartbeat</button><button class="btn" id="sample">Send reading</button></div>
+   <div class="gate" id="gate">Move a slider then press “Send reading”. Only <i>implausible or abnormal</i> readings become events (gas ≥ 2000 with hysteresis, temperature jump &gt; 4 °C, PIR edge / flood).</div>
+   <div class="row"><button class="btn" id="reset">Reset log</button></div>
+  </div>
+  <div>
+   <div class="chainbox"><div class="chain" id="chain"></div></div>
+   <div class="anchor"><span>Off-device <b>anchor</b>:</span><span class="chip" id="anchor">none</span><button class="btn" id="setanchor" style="padding:6px 12px">Save anchor now</button>
+    <span>Device key index: <span class="chip" id="kidx">0</span></span></div>
+  </div>
+ </div>
+ <div class="grid g2" style="margin-top:16px">
+  <div class="card">
+   <h3><span class="n">2</span>Play the attacker (no key)</h3>
+   <p>Selected record: <b class="mono" id="selinfo">—</b></p>
+   <div class="row">
+    <button class="btn bad" data-atk="EDIT">Edit record</button>
+    <button class="btn bad" data-atk="DELETE">Delete record</button>
+    <button class="btn bad" data-atk="REHASH">Edit + recompute hashes</button>
+    <button class="btn bad" data-atk="TRUNCATE">Truncate tail (2)</button>
+   </div>
+   <div class="row"><button class="btn bad" data-atk="FORGE">Hold the current key → append a forged record</button></div>
+   <p class="note">The last button is the documented limit: an attacker who steals the <i>current</i> key can append, but still cannot rewrite earlier records.</p>
+   <div class="log" id="log"></div>
+  </div>
+  <div class="card">
+   <h3><span class="n">3</span>Audit — three verification levels</h3>
+   <div class="row"><button class="btn pri" id="audit">Run audit</button></div>
+   <table class="res" id="res" style="margin-top:10px"><thead><tr><th>Level</th><th>Verdict</th><th>Detail</th></tr></thead>
+    <tbody><tr><td>Chain only</td><td>—</td><td class="mut">run the audit</td></tr><tr><td>Chain + HMAC (K₀ offline)</td><td>—</td><td></td></tr><tr><td>+ external anchor</td><td>—</td><td></td></tr></tbody></table>
+   <p class="note">“Chain only” is what the device can check by itself. HMAC needs K₀ kept offline; the anchor detects truncation.</p>
+  </div>
+ </div>
+</section>
+
+<section id="how">
+ <h2>How it works</h2>
+ <p class="sub">Three small ideas, each one closing a gap the previous one leaves open.</p>
+ <div class="grid g3">
+  <div class="card"><h3>1 · Gate</h3><p>O(1) plausibility rules discard noise and flag physically implausible readings (temperature jump, gas alarm, PIR flooding). Only events — plus a heartbeat so that silence is evidence — are logged.</p></div>
+  <div class="card"><h3>2 · Seal</h3><p class="mono" style="font-size:12px">h<sub>i</sub> = SHA256(seq|ts|event|value|h<sub>i−1</sub>)<br>m<sub>i</sub> = HMAC(K<sub>i</sub>, h<sub>i</sub>)<br>K<sub>i+1</sub> = SHA256(K<sub>i</sub>)</p><p style="margin-top:6px">Editing a stone breaks every link after it; the MAC stops anyone who can recompute hashes; the ratchet protects the past if the device is stolen later.</p></div>
+  <div class="card"><h3>3 · Verify offline</h3><p><code>tools/verify.py</code> replays the log with K₀ and an optional anchor (seq, head hash), and localises the <b>first</b> altered record.</p></div>
+ </div>
+ <div class="card" style="margin-top:16px;overflow-x:auto">
+  <table><thead><tr><th>Attack on the log file</th><th class="c">Chain only</th><th class="c">Chain + HMAC</th><th class="c">+ anchor</th></tr></thead><tbody>
+  <tr><td>Edit a record</td><td class="c okc">✔</td><td class="c okc">✔</td><td class="c okc">✔</td></tr>
+  <tr><td>Delete / insert / reorder</td><td class="c okc">✔</td><td class="c okc">✔</td><td class="c okc">✔</td></tr>
+  <tr><td>Edit and recompute hashes (no key)</td><td class="c badc">✘</td><td class="c okc">✔</td><td class="c okc">✔</td></tr>
+  <tr><td>Truncate the tail</td><td class="c badc">✘</td><td class="c badc">✘</td><td class="c okc">✔</td></tr>
+  <tr><td>Attacker holds the <i>current</i> key (append forged records)</td><td class="c badc">✘</td><td class="c badc">✘</td><td class="c badc">✘</td></tr></tbody></table>
+  <p class="note">The table matches the lab above and the host experiments in the repository (synthetic logs, 300 trials per attack). The last row is a documented limit, not a bug — see <a href="https://github.com/Amalkaraoud/Cairn-repo/blob/main/docs/THREAT_MODEL.md" target="_blank" rel="noopener">THREAT_MODEL.md</a>.</p>
+ </div>
+</section>
+
+<section id="sim">
+ <h2>The real firmware, in the Wokwi simulator</h2>
+ <p class="sub">ESP32 + SSD1306 OLED + DHT22 + PIR + MQ-2 gas sensor + two LEDs + ATTACK / AUDIT buttons. The project below is the same code as <code>firmware/</code>. Press ▶ in the simulator.</p>
+ <div class="card wokwi">
+  <div class="row" style="margin:0 0 12px"><a class="btn pri" href="https://wokwi.com/projects/480885243109700609" target="_blank" rel="noopener">Open in Wokwi ↗</a>
+  <button class="btn" id="embed">Load the simulator here</button></div>
+  <div id="frame"><p class="note" style="margin:0">The embedded simulator is loaded on demand (it is heavy). If your browser blocks the frame, use “Open in Wokwi”.</p></div>
+ </div>
+</section>
+
+<section id="results">
+ <h2>Honest status</h2>
+ <div class="grid g2">
+  <div class="card"><h3>Verified</h3><p>Hash chain, HMAC, ratchet and verifier are unit-tested on a host (16 tests). The firmware boots in Wokwi, syncs time, and logs events such as <code>GAS_ALARM</code>.</p></div>
+  <div class="card"><h3>Not claimed</h3><p>Never run on real ESP32 hardware. No log rotation, flash-wear management or secure key storage. Detection rates come from synthetic host experiments.</p></div>
+ </div>
+</section>
+</div>
+<footer><div class="wrap">CAIRN · MIT licence · <a href="https://github.com/Amalkaraoud/Cairn-repo" target="_blank" rel="noopener">github.com/Amalkaraoud/Cairn-repo</a> · Demo key K₀ is public — never reuse it.</div></footer>
+
+<script>
+"use strict";
+const K0_HEX="434149524e2d44454d4f2d4b45592d4e4f542d412d5345435245542d30303030";
+const GENESIS="0".repeat(64), enc=new TextEncoder();
+const hex=b=>[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("");
+const unhex=h=>new Uint8Array(h.match(/../g).map(x=>parseInt(x,16)));
+const sha256=async d=>new Uint8Array(await crypto.subtle.digest("SHA-256",typeof d==="string"?enc.encode(d):d));
+async function hmac(key,msg){const k=await crypto.subtle.importKey("raw",key,{name:"HMAC",hash:"SHA-256"},false,["sign"]);return hex(await crypto.subtle.sign("HMAC",k,enc.encode(msg)))}
+const canonical=(s,t,e,v,p)=>`${s}|${t}|${e}|${v}|${p}`;
+const hashRec=async(s,t,e,v,p)=>hex(await sha256(canonical(s,t,e,v,p)));
+
+let recs=[], devKey=null, kIdx=0, anchor=null, sel=-1, ts0=1767225600, busy=false;
+const $=id=>document.getElementById(id);
+function log(m,c){const d=$("log");d.innerHTML+=`<div${c?` style="color:${c}"`:""}>${m}</div>`;d.scrollTop=d.scrollHeight}
+
+async function append(ev,val){
+  const s=recs.length+1,t=ts0+s*7,prev=s>1?recs[s-2].h:GENESIS;
+  const h=await hashRec(s,t,ev,val,prev), m=await hmac(devKey,h);
+  devKey=await sha256(devKey); kIdx++;
+  recs.push({s,t,e:ev,v:String(val),p:prev,h,m}); render(recs.length-1);
+}
+async function reset(){
+  recs=[];anchor=null;sel=-1;kIdx=0;devKey=unhex(K0_HEX);$("log").innerHTML="";
+  await append("HB","boot");await append("MOTION","1");await append("TEMP_JUMP","31.5");await append("GAS_ALARM","2630");
+  sel=recs.length-1;render();log("Log reset. K₀ is kept offline; the device only holds the current ratcheted key.")
+}
+function render(newIdx){
+  const c=$("chain");c.innerHTML="";
+  recs.forEach((r,i)=>{
+    const d=document.createElement("div");d.className="stone"+(r.e==="HB"?" hb":"")+(/ALARM|FLOOD|FAKE|FORGED/.test(r.e)?" al":"")+(i===sel?" sel":"");
+    if(i!==newIdx)d.style.animation="none";d.dataset.i=i;
+    d.innerHTML=`<div class="t"><span>#${r.s}</span><span class="mut">t+${r.t-ts0}s</span></div><div class="ev">${r.e}</div><div class="mut">value ${r.v}</div><div class="hx"><span class="mut">prev</span> ${r.p.slice(0,8)}…<br><span class="mut">hash</span> ${r.h.slice(0,8)}…<br><span class="mut">mac&nbsp;</span> ${r.m.slice(0,8)}…</div>`;
+    d.onclick=()=>{sel=i;render();};c.appendChild(d)});
+  $("selinfo").textContent=recs[sel]?`#${recs[sel].s} ${recs[sel].e}`:"—";
+  $("kidx").textContent=kIdx;
+  $("anchor").textContent=anchor?`seq ${anchor[0]} · ${anchor[1].slice(0,10)}…`:"none";
+  const box=c.parentElement;if(newIdx!==undefined)box.scrollLeft=box.scrollWidth;
+}
+/* ---- plausibility gate (subset of firmware/plausibility.py) ---- */
+let prevTemp=null,gasOn=false,pirEdges=[],floodOn=false;
+async function sendReading(){
+  const g=+$("gas").value,t=+$("tmp").value,out=[];
+  if(prevTemp!==null&&Math.abs(t-prevTemp)>4)out.push(["TEMP_JUMP",t.toFixed(1)]);prevTemp=t;
+  if(!gasOn&&g>=2000){gasOn=true;out.push(["GAS_ALARM",g])}else if(gasOn&&g<1850)gasOn=false;
+  if(!out.length){$("gate").innerHTML="Readings <b>plausible</b> — nothing logged (the gate keeps the log small).";return}
+  $("gate").innerHTML="Gate raised: "+out.map(o=>`<b>${o[0]}</b>`).join(", ");
+  for(const [e,v] of out)await append(e,v)
+}
+async function pir(){
+  const now=Date.now();pirEdges=pirEdges.filter(x=>now-x<10000);pirEdges.push(now);
+  if(pirEdges.length>=6&&!floodOn){floodOn=true;$("gate").innerHTML="Gate raised: <b>PIR_FLOOD</b> (6 edges in 10 s — replay/jamming?)";await append("PIR_FLOOD",pirEdges.length)}
+  else if(!floodOn){$("gate").innerHTML="Gate raised: <b>MOTION</b>";await append("MOTION","1")}
+  else $("gate").innerHTML="PIR flood already flagged — extra edges are suppressed.";
+  if(pirEdges.length<3)floodOn=false;
+}
+/* ---- verifier (port of chainlog.verify_records) ---- */
+async function verify(list,k0,anc){
+  let prev=GENESIS,key=k0,exp=1,checked=0;const hs=[];
+  for(const r of list){
+    if(r.s!==exp)return{ok:false,bad:exp,why:"SEQ_GAP"};
+    if(r.p!==prev)return{ok:false,bad:r.s,why:"PREV_MISMATCH"};
+    if(await hashRec(r.s,r.t,r.e,r.v,r.p)!==r.h)return{ok:false,bad:r.s,why:"HASH_MISMATCH"};
+    if(key){if(await hmac(key,r.h)!==r.m)return{ok:false,bad:r.s,why:"MAC_MISMATCH"};key=await sha256(key)}
+    prev=r.h;exp++;checked++;hs.push(r.h)}
+  if(anc){if(checked<anc[0])return{ok:false,bad:checked+1,why:"TRUNCATED (anchor seq "+anc[0]+")"};
+    if(hs[anc[0]-1]!==anc[1])return{ok:false,bad:anc[0],why:"ANCHOR_MISMATCH"}}
+  return{ok:true,checked}
+}
+async function rehashFrom(i){let prev=i?recs[i-1].h:GENESIS;for(let j=i;j<recs.length;j++){const r=recs[j];r.s=j+1;r.p=prev;r.h=await hashRec(r.s,r.t,r.e,r.v,r.p);prev=r.h}}
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+async function audit(){
+  if(busy)return;busy=true;document.querySelectorAll(".stone").forEach(s=>s.classList.remove("bad","good"));
+  const k0=unhex(K0_HEX);
+  const lv=[await verify(recs,null,null),await verify(recs,k0,null),await verify(recs,k0,anchor)];
+  const names=["Chain only","Chain + HMAC (K₀ offline)","+ external anchor"];
+  $("res").querySelector("tbody").innerHTML=lv.map((r,i)=>{
+    const noA=i===2&&!anchor;
+    const v=noA?"—":r.ok?`<span class="okc">VERIFIED</span>`:`<span class="badc">TAMPERED</span>`;
+    const d=noA?"<span class=mut>save an anchor first</span>":r.ok?`${r.checked} records OK`:`${r.why} at #${r.bad}`;
+    return`<tr><td>${names[i]}</td><td>${v}</td><td>${d}</td></tr>`}).join("");
+  // animated sweep
+  const worst=lv.find(r=>!r.ok);const stop=worst?worst.bad:recs.length+1;
+  const st=[...document.querySelectorAll(".stone")];
+  for(let i=0;i<st.length&&i+1<=stop;i++){st[i].classList.add("scan");await sleep(70);st[i].classList.remove("scan");
+    if(i+1===stop&&worst)st[i].classList.add("bad");else st[i].classList.add("good")}
+  const strongest=[...lv].reverse().find((r,i)=>!(i===0&&!anchor));
+  log(worst?`Audit: tampering detected — first bad record #${worst.bad} (${worst.why}).`:"Audit: all levels verified.",worst?"#ff9b91":"#7be0a0");
+  busy=false
+}
+async function attack(k){
+  if(!recs.length)return;const i=sel<0?recs.length-1:sel;
+  const copy=()=>recs.forEach(()=>0);
+  if(k==="EDIT"){recs[i].e="HB";recs[i].v="0";log(`Attacker edits #${recs[i].s}: event → HB (hides it). Hash not recomputed.`)}
+  if(k==="DELETE"){const j=(i===recs.length-1&&i>0)?i-1:i;log(`Attacker deletes #${recs[j].s} ${recs[j].e} from the middle of the log.`);recs.splice(j,1);sel=Math.min(j,recs.length-1)}
+  if(k==="REHASH"){recs[i].e="HB";recs[i].v="0";await rehashFrom(i);log(`Attacker edits #${recs[i].s} and recomputes every hash after it — but has no key.`)}
+  if(k==="TRUNCATE"){const n=Math.min(2,recs.length);recs.splice(recs.length-n,n);sel=recs.length-1;log(`Attacker truncates the last ${n} records.`)}
+  if(k==="FORGE"){const s=recs.length+1,t=ts0+s*7,p=recs[recs.length-1].h,e="HB",v="all-clear";
+    const h=await hashRec(s,t,e,v,p),m=await hmac(devKey,h);recs.push({s,t,e:"HB",v,p,h,m});log("Attacker with the CURRENT key appends a forged heartbeat: valid chain, valid MAC — undetectable (documented limit).","#f0c06a");sel=recs.length-1}
+  render();
+}
+$("gas").oninput=e=>$("gasv").textContent=e.target.value;
+$("tmp").oninput=e=>$("tmpv").textContent=(+e.target.value).toFixed(1)+" °C";
+$("sample").onclick=sendReading;$("pir").onclick=pir;$("hb").onclick=()=>append("HB","alive");
+$("reset").onclick=reset;$("audit").onclick=audit;
+$("setanchor").onclick=()=>{if(recs.length){anchor=[recs.length,recs[recs.length-1].h];render();log(`Anchor saved off-device: seq ${anchor[0]}, head ${anchor[1].slice(0,12)}…`)}};
+document.querySelectorAll("[data-atk]").forEach(b=>b.onclick=()=>attack(b.dataset.atk));
+$("embed").onclick=()=>{$("frame").innerHTML='<iframe src="https://wokwi.com/projects/480885243109700609" title="CAIRN Wokwi simulation" allow="clipboard-write"></iframe>'};
+if(!(window.crypto&&crypto.subtle)){document.getElementById("lab").insertAdjacentHTML("afterbegin",'<div class="card" style="border-color:var(--bad)">WebCrypto needs https:// or localhost — open the GitHub Pages link.</div>')}
+else reset();
+</script>
+</body>
+</html>
