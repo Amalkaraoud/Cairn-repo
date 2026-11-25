@@ -12,7 +12,7 @@
 
 Everything runs in the [Wokwi](https://wokwi.com) ESP32 simulator — no hardware needed.
 
-[![Interactive demo](https://img.shields.io/badge/🌐_Interactive_demo-GitHub_Pages-f0a73a?style=for-the-badge)](https://amalkaraoud.github.io/Cairn-repo/) [![Open the live simulation on Wokwi](https://img.shields.io/badge/▶_Run_it_on-Wokwi-1f6feb?style=for-the-badge)](https://wokwi.com/projects/480885243109700609)
+[![Interactive demo](https://img.shields.io/badge/_Interactive_demo-GitHub_Pages-f0a73a?style=for-the-badge)](https://amalkaraoud.github.io/Cairn-repo/) [![Open the live simulation on Wokwi](https://img.shields.io/badge/_Run_it_on-Wokwi-1f6feb?style=for-the-badge)](https://wokwi.com/projects/480885243109700609)
 
 **Interactive web demo (real SHA-256/HMAC chain, attacks, audit):** [https://amalkaraoud.github.io/Cairn-repo/](https://amalkaraoud.github.io/Cairn-repo/)  
 **Live simulation (working project, circuit + firmware preloaded):** [https://wokwi.com/projects/480885243109700609](https://wokwi.com/projects/480885243109700609)
